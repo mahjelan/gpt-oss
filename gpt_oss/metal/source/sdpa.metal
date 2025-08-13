@@ -47,7 +47,7 @@ kernel void gptoss_f32_sdpa_q8_d64(
     float m6 = static_cast<float>(s[h * qmul + 6]);
     float m7 = static_cast<float>(s[h * qmul + 7]);
 
-    // Optimized log-sum-exp tracking with better numerical stability
+	// Stable softmax denominator: sum-exp accumulator with running max
     float l0 = 1.0f;
     float l1 = 1.0f;
     float l2 = 1.0f;
@@ -111,7 +111,7 @@ kernel void gptoss_f32_sdpa_q8_d64(
         qk6 = metal::simd_sum(qk6);
         qk7 = metal::simd_sum(qk7);
 
-        // Optimized log-sum-exp update with better numerical stability
+		// Stable softmax: update running max and rescaled sum-exp
         const float new_m0 = metal::max(m0, qk0);
         const float new_m1 = metal::max(m1, qk1);
         const float new_m2 = metal::max(m2, qk2);
@@ -131,7 +131,7 @@ kernel void gptoss_f32_sdpa_q8_d64(
         const float exp6 = metal::exp(qk6 - new_m6);
         const float exp7 = metal::exp(qk7 - new_m7);
 
-        // Optimized log-sum-exp update with better numerical stability
+		// Stable softmax: l = l * exp(m - new_m) + exp(qk - new_m)
         l0 = l0 * metal::exp(m0 - new_m0) + exp0;
         l1 = l1 * metal::exp(m1 - new_m1) + exp1;
         l2 = l2 * metal::exp(m2 - new_m2) + exp2;
@@ -162,23 +162,13 @@ kernel void gptoss_f32_sdpa_q8_d64(
         out7 = metal::fma(vval, exp7, out7);
     }
 
-    // Optimized output normalization with better numerical stability
-    const float inv_l0 = 1.0f / l0;
-    const float inv_l1 = 1.0f / l1;
-    const float inv_l2 = 1.0f / l2;
-    const float inv_l3 = 1.0f / l3;
-    const float inv_l4 = 1.0f / l4;
-    const float inv_l5 = 1.0f / l5;
-    const float inv_l6 = 1.0f / l6;
-    const float inv_l7 = 1.0f / l7;
-
-    // Optimized final output computation with better vectorization
-    reinterpret_cast<device float2*>(output + 0 * head_dim)[tid] = out0 * inv_l0;
-    reinterpret_cast<device float2*>(output + 1 * head_dim)[tid] = out1 * inv_l1;
-    reinterpret_cast<device float2*>(output + 2 * head_dim)[tid] = out2 * inv_l2;
-    reinterpret_cast<device float2*>(output + 3 * head_dim)[tid] = out3 * inv_l3;
-    reinterpret_cast<device float2*>(output + 4 * head_dim)[tid] = out4 * inv_l4;
-    reinterpret_cast<device float2*>(output + 5 * head_dim)[tid] = out5 * inv_l5;
-    reinterpret_cast<device float2*>(output + 6 * head_dim)[tid] = out6 * inv_l6;
-    reinterpret_cast<device float2*>(output + 7 * head_dim)[tid] = out7 * inv_l7;
+	// Normalize outputs by sum-exp denominator (prefer division for accuracy)
+	reinterpret_cast<device float2*>(output + 0 * head_dim)[tid] = out0 / l0;
+	reinterpret_cast<device float2*>(output + 1 * head_dim)[tid] = out1 / l1;
+	reinterpret_cast<device float2*>(output + 2 * head_dim)[tid] = out2 / l2;
+	reinterpret_cast<device float2*>(output + 3 * head_dim)[tid] = out3 / l3;
+	reinterpret_cast<device float2*>(output + 4 * head_dim)[tid] = out4 / l4;
+	reinterpret_cast<device float2*>(output + 5 * head_dim)[tid] = out5 / l5;
+	reinterpret_cast<device float2*>(output + 6 * head_dim)[tid] = out6 / l6;
+	reinterpret_cast<device float2*>(output + 7 * head_dim)[tid] = out7 / l7;
 }

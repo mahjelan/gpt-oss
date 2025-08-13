@@ -11,18 +11,18 @@ set(CMAKE_OBJC_STANDARD_REQUIRED ON)
 
 # Performance optimization flags for C/C++ compilation
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -ffast-math -fno-math-errno -fno-trapping-math -march=native -mtune=native")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -ffast-math -fno-math-errno -fno-trapping-math -march=native -mtune=native")
-    set(CMAKE_OBJC_FLAGS_RELEASE "-O3 -DNDEBUG -ffast-math -fno-math-errno -fno-trapping-math -march=native -mtune=native")
+	set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -fno-math-errno -fno-trapping-math -march=native -mtune=native")
+	set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -fno-math-errno -fno-trapping-math -march=native -mtune=native")
+	set(CMAKE_OBJC_FLAGS_RELEASE "-O3 -DNDEBUG -fno-math-errno -fno-trapping-math -march=native -mtune=native")
 endif()
 
 # Performance optimization flags
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(METAL_OPT_FLAGS "-O3 -ffast-math -fno-math-errno -fno-trapping-math")
-    set(METAL_DEBUG_FLAGS "")
+	set(METAL_OPT_FLAGS "-O3")
+	set(METAL_DEBUG_FLAGS "")
 else()
-    set(METAL_OPT_FLAGS "-O2")
-    set(METAL_DEBUG_FLAGS "-g")
+	set(METAL_OPT_FLAGS "-O2")
+	set(METAL_DEBUG_FLAGS "-g")
 endif()
 
 find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
